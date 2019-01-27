@@ -1,0 +1,73 @@
+#Класс игрока с реализацией перемещения и прыжка
+import os
+import pygame
+
+pygame.init()
+
+size = width, height = 500, 500
+screen = pygame.display.set_mode(size)
+
+JUMP_POWER = 11
+MOVE_SPEED = 4
+GRAVITY = 1
+
+class Hero(pygame.sprite.Sprite):
+    def __init__(self, pos, *group):
+        super().__init__(*group)
+        self.init_image()
+        self.init_info()
+#------------------------------------------------------------------------------> initialization        
+    def init_image(self):
+        self.image = pygame.Surface((15, 15))
+        pygame.draw.rect(self.image, (100, 0, 50), (0, 0, 15, 15))
+        self.rect = pygame.Rect(0, 0, 15, 15)
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+        
+    def init_info(self):
+        self.onGround = False
+        self.xvel = 0
+        self.yvel = 0
+#------------------------------------------------------------------------------> moving        
+    def update(self, left, right, up, platforms):
+        if up:
+            if self.onGround: 
+                self.yvel = -JUMP_POWER
+                
+        if left:
+            self.xvel = -MOVE_SPEED
+            
+        if right:
+            self.xvel = MOVE_SPEED
+            
+        if not(right or left):
+            self.xvel = 0
+
+        if not self.onGround:
+            self.yvel += GRAVITY
+
+        self.onGround = False   
+        self.rect.y += self.yvel
+        self.collide(0, self.yvel, platforms)
+
+        self.rect.x += self.xvel 
+        self.collide(self.xvel, 0, platforms)
+#------------------------------------------------------------------------------> colliding
+    def collide(self, xvel, yvel, platforms):
+        for p in platforms:
+            if pygame.sprite.collide_rect(self, p):
+
+                if xvel > 0:                      
+                    self.rect.right = p.rect.left 
+
+                if xvel < 0:                      
+                    self.rect.left = p.rect.right 
+
+                if yvel > 0:                      
+                    self.rect.bottom = p.rect.top 
+                    self.onGround = True          
+                    self.yvel = 0                 
+
+                if yvel < 0:                      
+                    self.rect.top = p.rect.bottom 
+                    self.yvel = 0
