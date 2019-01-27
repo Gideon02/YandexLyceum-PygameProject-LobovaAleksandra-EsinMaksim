@@ -1,0 +1,80 @@
+import os
+import pygame
+import math
+pygame.init()
+
+size = WIN_S_X, WIN_S_Y = 1000, 700
+screen = pygame.display.set_mode(size)
+
+JUMP_POWER = 11
+MOVE_SPEED = 4
+GRAVITY = 1
+
+print(math.sin(math.asin(1) * 2))
+
+def load_image(name, colorkey=None):
+    fullname = os.path.join('data', name)
+    try:
+        image = pygame.image.load(fullname)
+    except pygame.error as message:
+        print('Cannot load image:', name)
+        raise SystemExit(message)
+    image = image.convert_alpha()
+
+    if colorkey is not None:
+        if colorkey is -1:
+            colorkey = image.get_at((0, 0))
+        image.set_colorkey(colorkey)
+    return image
+
+class Snowball(pygame.sprite.Sprite):
+    def __init__(self, start_pos, start_speed_x, start_speed_y, start_angle, group):
+        super().__init__(group)
+        self.init_image()
+        self.init_info(start_pos, start_speed_x, start_speed_y, start_angle)
+    
+    def init_image(self):
+        self.image = pygame.Surface((20, 20))
+        pygame.draw.circle(self.image, (121, 160, 193), (10, 10), 10)
+        pygame.draw.circle(self.image, (255, 255, 255), (10, 10), 9)
+        self.rect = pygame.Rect(0, 0, 10, 10)
+
+    def init_info(self, start_pos, start_speed_x, start_speed_y, start_angle):
+        self.rect.x = start_pos[0]
+        self.rect.y = start_pos[1]
+        self.start_speed_x = start_speed_x
+        self.start_speed_y = start_speed_y
+        self.start_angle = start_angle
+        self.time = 0.0
+    
+    def update(self, time):
+        vx = self.start_speed_x
+        vy = WIN_S_Y - self.start_speed_y
+        angle = self.start_angle
+        self.rect.x =  vx * time * math.cos(angle)
+        self.rect.y = WIN_S_Y - vy * time * math.sin(angle) - (-5 * time ** 2)/2
+        #print(self.rect.x, self.rect.y)
+
+running = True
+all_sprites = pygame.sprite.Group()
+
+pygame.time.set_timer(pygame.USEREVENT, 10)
+snowball = Snowball((10, 450), 30, 470, 3.14/20, all_sprites)
+clock = pygame.time.Clock()
+
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        
+        if event.type == pygame.USEREVENT:
+            snowball.time += 0.01
+            snowball.update(snowball.time)
+                       
+    #screen.fill((0, 0, 0))
+    all_sprites.draw(screen)
+    clock.tick(60)
+    pygame.display.flip()
+
+    
+pygame.quit()
