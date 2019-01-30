@@ -2,6 +2,9 @@ import os
 import pygame
 import math
 
+from textures import Texture_Back, load_map, load_level, textures_spr, blocks, coins, COUNT_COIN
+from activities import Player, Snowball, players, snowballs1, snowballs2
+
 pygame.init()
 
 size = width, height = 500, 500
@@ -27,214 +30,122 @@ def load_image(name, colorkey=None):
         image.set_colorkey(colorkey)
     return image
 
-def load_level(filename):
-    with open('data/level.txt', 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
-    return level_map
-
-class Texture_Block(pygame.sprite.Sprite):
-    def __init__(self, pos):
-        super().__init__(all_sprites, blocks, textures_spr)
-        self.image = pygame.Surface((20, 20))
-        pygame.draw.rect(self.image, (71, 74, 81), (0, 0, 20, 20))
-        self.rect = pygame.Rect(0, 0, 20, 20)
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]        
-        
-class Texture_Back(pygame.sprite.Sprite):
-    def __init__(self, pos):
-        super().__init__(all_sprites, textures_spr)
-        self.image = pygame.Surface((20, 20))
-        pygame.draw.rect(self.image, (0, 128, 255), (0, 0, 20, 20))
-        self.rect = pygame.Rect(0, 0, 20, 20)
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]
-        
-class Texture_Coin(pygame.sprite.Sprite):
-    def __init__(self, pos):
-        super().__init__(all_sprites, textures_spr)
-        self.image = pygame.Surface((20, 20))
-        pygame.draw.rect(self.image, (255, 255, 0), (0, 0, 20, 20))
-        self.rect = pygame.Rect(0, 0, 20, 20)
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]
-        self.add(coins)
-        
-class Hero(pygame.sprite.Sprite):
-    def __init__(self, pos):
-        super().__init__(all_sprites, heroes)
-        self.image = pygame.Surface((15, 15))
-        pygame.draw.rect(self.image, (100, 0, 50), (0, 0, 15, 15))
-        self.rect = pygame.Rect(0, 0, 15, 15)
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]
-        self.onGround = False
-        self.xvel = 0
-        self.yvel = 0
-        self.count = 0
-                
-    def update(self, left, right, up, platforms):
-
-        if up:
-            if self.onGround: 
-                self.yvel = -JUMP_POWER
-
-        if left:
-            self.xvel = -MOVE_SPEED 
-
-        if right:
-            self.xvel = MOVE_SPEED
-        
-        if not(right or left):
-            self.xvel = 0
-
-        if not self.onGround:
-            self.yvel += GRAVITY
-
-        self.onGround = False   
-        self.rect.y += self.yvel
-        self.collide(0, self.yvel, platforms)
-
-        self.rect.x += self.xvel 
-        self.collide(self.xvel, 0, platforms)
-
-    def collide(self, xvel, yvel, platforms):
-        for p in platforms:
-            if pygame.sprite.collide_rect(self, p):
-
-                if xvel > 0:                      
-                    self.rect.right = p.rect.left 
-
-                if xvel < 0:                      
-                    self.rect.left = p.rect.right 
-
-                if yvel > 0:                      
-                    self.rect.bottom = p.rect.top 
-                    self.onGround = True          
-                    self.yvel = 0                 
-
-                if yvel < 0:                      
-                    self.rect.top = p.rect.bottom 
-                    self.yvel = 0    
-                    
-class Snowball(pygame.sprite.Sprite):
-    def __init__(self, start_pos, pl):
-        super().__init__(all_sprites, snowballs)
-        self.init_image()
-        self.init_info(start_pos, pl)
-    
-    def init_image(self):
-        self.image = pygame.Surface((20, 20))
-        pygame.draw.rect(self.image, (0, 128, 255), (0, 0, 20, 20))
-        pygame.draw.circle(self.image, (121, 160, 193), (10, 10), 10)
-        pygame.draw.circle(self.image, (255, 255, 255), (10, 10), 6)
-        
-        self.rect = pygame.Rect(0, 0, 10, 10)
-
-    def init_info(self, start_pos, pl):
-        self.rect.x = start_pos[0]
-        self.rect.y = start_pos[1]
-        self.start_speed_x = 30 * pl
-        self.start_speed_y = 0
-        self.start_angle = 3.14/20
-        self.time = 0.0
-    
-    def update(self):
-        time = self.time + 0.01
-        vx = self.start_speed_x
-        vy = self.start_speed_y
-        angle = self.start_angle
-        self.rect.x += vx * GRAVITY * 0.2 
-        self.rect.y -= vy * time * math.sin(angle) - (9.8 * GRAVITY * time ** 2)/2
-        
-        if pygame.sprite.spritecollideany(self, blocks):
-            self.kill()
+def load_endgame():
+    font = pygame.font.Font(None, 50)
+    text = font.render("you win", 1, (100, 255, 100))
+    text_x = width // 2 - text.get_width() // 2
+    text_y = height // 2 - text.get_height() // 2
+    text_w = text.get_width()
+    text_h = text.get_height()
+    screen.blit(text, (text_x, text_y))
+    pygame.draw.rect(screen, (0, 255, 0), (text_x - 10, text_y - 10,
+                                           text_w + 20, text_h + 20), 1)     
             
-all_sprites = pygame.sprite.Group()
-textures_spr = pygame.sprite.Group()
-blocks = pygame.sprite.Group()
-heroes = pygame.sprite.Group()
-coins = pygame.sprite.Group()
-snowballs = pygame.sprite.Group()
-
-textures = load_level('level.txt')
-
-for i in range(25):
-    for j in range(25):
-        if textures[i][j] == '1':
-            Texture_Back((j*20, i*20))
-        elif textures[i][j] == '2':
-            Texture_Coin((j*20, i*20))
-        else:
-            Texture_Block((j*20, i*20))
+load_map(load_level('level'))
 
 clock = pygame.time.Clock()
 
-hero = Hero((30, 465))
+team_1, team_2 = pygame.sprite.Group(), pygame.sprite.Group()
+player1 = Player((30, 465))
+player1.add(team_1)
 
-running = True
-left = False
-right = False
-up = False
+player2 = Player((30, 30))
+player2.add(team_2)
 
-while running:
+running_screen = True
+left1 = False
+right1 = False
+up1 = False
+
+left2 = False
+right2 = False
+up2 = False
+
+
+while running_screen:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
+            running_screen = False
         
         if event.type == pygame.KEYDOWN:
             
             if event.key == pygame.K_UP:
-                up = True
+                up2 = True
 
             if event.key == pygame.K_LEFT:
-                left = True
+                left2 = True
                     
             if event.key == pygame.K_RIGHT:
-                right = True
+                right2 = True
+            
+            if event.key == pygame.K_w:
+                up1 = True
+        
+            if event.key == pygame.K_a:
+                left1 = True
+        
+            if event.key == pygame.K_d:
+                right1 = True                
                 
         if event.type == pygame.KEYUP:
             
             if event.key == pygame.K_UP:
-                up = False
+                up2 = False
         
             if event.key == pygame.K_LEFT:
-                left = False
+                left2 = False
         
             if event.key == pygame.K_RIGHT:
-                right = False
-            
+                right2 = False
+                
+            if event.key == pygame.K_w:
+                up1 = False
+        
+            if event.key == pygame.K_a:
+                left1 = False
+        
+            if event.key == pygame.K_d:
+                right1 = False              
             if event.key == pygame.K_e:
-                Snowball((hero.rect.x, hero.rect.y), 1)
+                Snowball((player1.rect.x, player1.rect.y), 1, 1)
                 
             if event.key == pygame.K_q:
-                Snowball((hero.rect.x, hero.rect.y), -1)
+                Snowball((player1.rect.x, player1.rect.y), -1, 1)
+                
+            if event.key == pygame.K_m:
+                Snowball((player2.rect.x, player2.rect.y), 1, 2)
+                
+            if event.key == pygame.K_n:
+                Snowball((player2.rect.x, player2.rect.y), -1, 2)
                        
     screen.fill((0, 0, 0))
-    if hero.count == 8:
-        font = pygame.font.Font(None, 50)
-        text = font.render("you win", 1, (100, 255, 100))
-        text_x = width // 2 - text.get_width() // 2
-        text_y = height // 2 - text.get_height() // 2
-        text_w = text.get_width()
-        text_h = text.get_height()
-        screen.blit(text, (text_x, text_y))
-        pygame.draw.rect(screen, (0, 255, 0), (text_x - 10, text_y - 10,
-                                               text_w + 20, text_h + 20), 1)  
+    if player1.count == COUNT_COIN:
+        load_endgame() 
     else:
-        if pygame.sprite.spritecollideany(hero, coins):
-            candidate = pygame.sprite.spritecollide(hero, coins, False)
-            hero.count += 1
+        if pygame.sprite.spritecollideany(player1, coins):
+            candidate = pygame.sprite.spritecollide(player1, coins, False)
+            player1.count += 1
             chg = Texture_Back((candidate[0].rect.x, candidate[0].rect.y))
-            candidate = pygame.sprite.spritecollide(hero, coins, True)
-        hero.update(left, right, up, blocks)
+            candidate = pygame.sprite.spritecollide(player1, coins, True)
+            
+        player1.update(left1, right1, up1, blocks)
+        player2.update(left2, right2, up2, blocks)
+        
+        for snowball in snowballs1:
+            snowball.hurt(team_2)
+            snowball.update(blocks)
+            
+        for snowball in snowballs2:
+            snowball.hurt(team_1)
+            snowball.update(blocks)
+            
+            
         textures_spr.draw(screen)
-        heroes.draw(screen)
-        for snowball in snowballs:
-            snowball.update()
-        snowballs.draw(screen)
+        players.draw(screen)
+        snowballs1.draw(screen)
+        snowballs2.draw(screen)
+        
     clock.tick(60)
     pygame.display.flip()
-
     
 pygame.quit()
