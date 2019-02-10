@@ -81,7 +81,7 @@ class Camera:
 
 
 camera = Camera((0, 0))
-pygame.time.set_timer(pygame.USEREVENT, 80)
+pygame.time.set_timer(pygame.USEREVENT, 50)
 PAUSE = False
 pygame.mouse.set_visible( False )
 
@@ -167,23 +167,45 @@ while running_screen:
                 for moob in team_2:
                     moob.update()
                     count = 0
+            
+            elif count % 4 == 0:
+                for grey in greys:
+                    grey.update()
+                    
+                for coin in coins:
+                    coin.update()
+                
+                count += 1
+                
             else:
                 count += 1
-            for grey in greys:
-                grey.update()
-            for coin in coins:
-                coin.update()
+                
             for snowball in snowballs1:
                 snowball.hurt(team_2)
                 snowball.update(blocks)
-                
+                    
             for snowball in snowballs2:
                 snowball.hurt(team_1)
                 snowball.update(blocks)
 
-
     screen.fill((0, 0, 0))
+    if len(players) == 0:
+        f = True
+        while f:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running_screen = False
+                    f = False                    
+                    
+            screen.fill((255, 0, 0))
+            myfont = pygame.font.SysFont('Comic Sans MS', 30)
+            textsurface1 = myfont.render('YOU DIED', False, (0, 0, 0))
+            textsurface2 = myfont.render('', False, (0, 0, 0))
+            screen.blit(textsurface1,(525, 300))
+            screen.blit(textsurface2, (450, 350))             
     
+            pygame.display.flip()
+            clock.tick(60)
     if len(coins) == 0:
         f = True
         while f:
@@ -200,7 +222,7 @@ while running_screen:
             pygame.display.flip()
             clock.tick(60)  
             
-    if PAUSE:
+    elif PAUSE:
         screen.fill((255, 255, 0))
         myfont = pygame.font.SysFont('Comic Sans MS', 30)
         textsurface1 = myfont.render('PAUSE', False, (0, 0, 0))
@@ -214,8 +236,6 @@ while running_screen:
         
         player1.count += len(pygame.sprite.spritecollide(player1, coins, True))
         
-        
-            
         for group in all_sprites:
             for sprite in group:
                 camera.apply(sprite)
