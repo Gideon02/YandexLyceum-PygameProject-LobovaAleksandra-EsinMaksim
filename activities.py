@@ -6,10 +6,13 @@ pygame.init()
 
 size = width, height = 1000, 600
 
-JUMP_POWER = 25
-STAIR_POWER = 15
-MOVE_SPEED = 15
-GRAVITY = 5
+JUMP_POWER = 10
+STAIR_POWER = 4
+MOVE_SPEED = 7
+GRAVITY = 1
+ENEMYHEALTH = 5
+PLAYERHEALTH = 10
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     try:
@@ -32,17 +35,24 @@ class Player(pygame.sprite.Sprite):
         self.init_info()
         
     def init_image(self, pos):
-        self.image = pygame.Surface((24, 48))
-        pygame.draw.rect(self.image, (40, 40, 40), (0, 0, 24, 48))
-        self.rect = pygame.Rect(0, 0, 24, 48)
-        self.rect.x, self.rect.y = pos[0], pos[1]
-        self.rect.w, self.rect.h = 24, 48
-    
+        self.image = load_image('player1.png')
+        x, y, w, h = self.image.get_rect()
+        self.rect = pygame.Rect(pos[0], pos[1], w, h)
+        
     def init_info(self):
         self.onGround, self.onStair, self.up, self.left, self.right = False, False, False, False, False
         self.xvel, self.yvel, self.count = 0, 0, 0
-        self.health = 10
-                
+        self.health = PLAYERHEALTH
+        self.q = 1
+        self.prev_xvel = 1
+    
+    def change_image(self, filename):
+        x, y = self.rect.x, self.rect.y
+        self.image = load_image(filename)
+        _, _, w, h = self.image.get_rect()
+        self.rect.x, self.rect.y = x, y
+        self.rect.w, self.rect.h = w, h         
+        
     def update(self, left, right, up, platforms, stairs):
         if up:
             if self.onStair:
@@ -57,6 +67,7 @@ class Player(pygame.sprite.Sprite):
             self.xvel = 0
         if not self.onGround:
             self.yvel += GRAVITY
+        
             
         if pygame.sprite.spritecollideany(self, stairs):
             self.onStair = True
@@ -69,6 +80,41 @@ class Player(pygame.sprite.Sprite):
 
         self.rect.x += self.xvel 
         self.collide(self.xvel, 0, platforms, stairs)
+        
+        
+        if self.xvel > 0:
+            if self.yvel < 0:
+                self.change_image('jump1.png')
+            else:
+                self.q %= 16
+                self.q += 1
+                self.prev_xvel = 1
+                self.change_image('player'+str(self.q)+'.png')
+            
+            
+        elif self.xvel < 0:
+            if self.yvel < 0:
+                self.change_image('invert_jump1.png')
+            else:
+                
+                self.q %= 16
+                self.q += 1
+                self.prev_xvel = -1
+                self.change_image('invert_pl'+str(self.q)+'.png')
+            
+        else:
+            if self.prev_xvel > 0:
+                if self.yvel < 0:
+                    self.change_image('jump1.png')
+                else:
+                    self.change_image('jump2.png')
+                    self.q = 1
+            else:
+                if self.yvel < 0:
+                    self.change_image('invert_jump1.png')
+                else:
+                    self.change_image('invert_jump2.png')
+                    self.q = 1
 
     def collide(self, xvel, yvel, platforms, stairs):
         for p in platforms:
@@ -90,6 +136,30 @@ class Player(pygame.sprite.Sprite):
             self.health -= 1
         else:
             self.kill()
+        
+class Moob(pygame.sprite.Sprite):
+    def __init__(self, pos, napr, filename):
+        super().__init__(moobs)
+        self.init_image(filename, pos)
+        self.init_info(napr)
+        
+    def init_image(self, filename, pos):
+        self.image = load_image(filename)
+        x, y, w, h = self.image.get_rect()
+        self.rect = pygame.Rect(pos[0], pos[1], w, h)
+        
+    def init_info(self, napr):
+        self.napr = napr
+        self.health = ENEMYHEALTH
+    
+    def wound(self):
+        if self.health > 1:
+            self.health -= 1
+        else:
+            self.kill()        
+        
+    def update(self):
+        s = Snowball((self.rect.x, self.rect.y), self.napr, 2)
                     
 class Snowball(pygame.sprite.Sprite):
     def __init__(self, start_pos, napr, pl):
@@ -113,11 +183,11 @@ class Snowball(pygame.sprite.Sprite):
         self.time = 0.0
     
     def update(self, platforms):
-        time = self.time + 0.01
+        time = self.time + 0.15
         vx = self.start_speed_x
         vy = self.start_speed_y
         angle = self.start_angle
-        self.rect.x += vx * GRAVITY * 0.2 
+        self.rect.x += vx * 0.5
         self.rect.y -= vy * time * math.sin(angle) - (9.8 * GRAVITY * time ** 2)/2
         
         if pygame.sprite.spritecollideany(self, platforms):
@@ -130,5 +200,6 @@ class Snowball(pygame.sprite.Sprite):
                 pl.wound()
         
 players = pygame.sprite.Group()
+moobs = pygame.sprite.Group()
 snowballs1 = pygame.sprite.Group()
 snowballs2 = pygame.sprite.Group()
