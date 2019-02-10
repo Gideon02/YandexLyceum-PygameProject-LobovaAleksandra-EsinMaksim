@@ -7,8 +7,8 @@ pygame.init()
 size = width, height = 1000, 600
 
 JUMP_POWER = 10
-STAIR_POWER = 4
-MOVE_SPEED = 7
+STAIR_POWER = 7
+MOVE_SPEED = 10
 GRAVITY = 1
 ENEMYHEALTH = 5
 PLAYERHEALTH = 10
@@ -43,7 +43,7 @@ class Player(pygame.sprite.Sprite):
         self.onGround, self.onStair, self.up, self.left, self.right = False, False, False, False, False
         self.xvel, self.yvel, self.count = 0, 0, 0
         self.health = PLAYERHEALTH
-        self.q = 1
+        self.q = 0
         self.prev_xvel = 1
     
     def change_image(self, filename):
@@ -87,7 +87,7 @@ class Player(pygame.sprite.Sprite):
                 self.change_image('jump1.png')
             else:
                 self.q %= 16
-                self.q += 1
+                self.q += 2
                 self.prev_xvel = 1
                 self.change_image('player'+str(self.q)+'.png')
             
@@ -98,7 +98,7 @@ class Player(pygame.sprite.Sprite):
             else:
                 
                 self.q %= 16
-                self.q += 1
+                self.q += 2
                 self.prev_xvel = -1
                 self.change_image('invert_pl'+str(self.q)+'.png')
             
@@ -108,13 +108,13 @@ class Player(pygame.sprite.Sprite):
                     self.change_image('jump1.png')
                 else:
                     self.change_image('jump2.png')
-                    self.q = 1
+                    self.q = 0
             else:
                 if self.yvel < 0:
                     self.change_image('invert_jump1.png')
                 else:
                     self.change_image('invert_jump2.png')
-                    self.q = 1
+                    self.q = 0
 
     def collide(self, xvel, yvel, platforms, stairs):
         for p in platforms:
@@ -183,7 +183,7 @@ class Snowball(pygame.sprite.Sprite):
         self.time = 0.0
     
     def update(self, platforms):
-        time = self.time + 0.15
+        time = self.time + 0.08
         vx = self.start_speed_x
         vy = self.start_speed_y
         angle = self.start_angle
@@ -203,3 +203,4 @@ players = pygame.sprite.Group()
 moobs = pygame.sprite.Group()
 snowballs1 = pygame.sprite.Group()
 snowballs2 = pygame.sprite.Group()
+
