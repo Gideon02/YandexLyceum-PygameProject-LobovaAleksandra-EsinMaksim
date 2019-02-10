@@ -7,6 +7,8 @@ size = width, height = 1000, 600
 
 COUNT_COIN = 8
 
+pygame.init()
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     try:
@@ -14,7 +16,7 @@ def load_image(name, colorkey=None):
     except pygame.error as message:
         print('Cannot load image:', name)
         raise SystemExit(message)
-    image = image.convert_alpha()
+    
 
     if colorkey is not None:
         if colorkey is -1:
@@ -27,49 +29,55 @@ class Texture_Block(pygame.sprite.Sprite):
         super().__init__(blocks)
         self.image = load_image("block_pic.png")
         self.image.convert_alpha()
-        self.rect = pygame.Rect(0, 0, 24, 24)
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]
+        self.rect = pygame.Rect(pos[0], pos[1], 24, 24)
         
 class Texture_Coin(pygame.sprite.Sprite):
     def __init__(self, pos):
         super().__init__(coins, textures_spr)
         self.q = 1
         self.image = load_image('coin1_pic.png')
-        self.rect = pygame.Rect(0, 0, 24, 24)
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]
+        self.rect = pygame.Rect(pos[0], pos[1], 24, 24)
     
     def update(self):
-        self.q %= 3
+        self.q %= 5
         self.q += 1
         self.image = load_image('coin'+str(self.q)+'_pic.png')
         
-class Texture_Stair(pygame.sprite.Sprite):
+class Texture_Left_Stair(pygame.sprite.Sprite):
     def __init__(self, pos):
         super().__init__(stairs)
-        self.image = load_image('block_pic.png')
+        self.image = load_image('left_stair_pic.png')
         self.image.convert_alpha()
-        self.rect = pygame.Rect(0, 0, 24, 24)
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]
+        self.rect = pygame.Rect(pos[0], pos[1], 6, 24)
+        
+class Texture_Right_Stair(pygame.sprite.Sprite):
+    def __init__(self, pos):
+        super().__init__(stairs)
+        self.image = load_image('right_stair_pic.png')
+        self.image.convert_alpha()
+        self.rect = pygame.Rect(pos[0] + 18, pos[1], 6, 24)
+        
 
 class Texture_Map(pygame.sprite.Sprite):
     def __init__(self, pos):
         super().__init__(textures_spr)
-        self.image = load_image('map_5_18.png')
-        self.rect = pygame.Rect(0, 0, 3072, 3072)
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]    
+        self.image = load_image('smth.png')
+        self.rect = pygame.Rect(pos[0], pos[1], 4800, 4800)
+
+class End(pygame.sprite.Sprite):
+    def __init__(self, pos):
+        super().__init__()
+        self.image = load_image('game_over.png')
+        self.rect = pygame.Rect(pos[0], pos[1], 1300, 700)
+        
+    
 class Texture_Grey(pygame.sprite.Sprite):
     def __init__(self, pos):
         super().__init__(greys, textures_spr)
         self.image = load_image('grey_1.png')
         self.q = 1
         #self.image.convert_alpha()
-        self.rect = pygame.Rect(0, 0, 24, 24)
-        self.rect.x = pos[0]
-        self.rect.y = pos[1]
+        self.rect = pygame.Rect(pos[0], pos[1], 24, 24)
     
     def update(self):
         self.q %= 3
@@ -94,17 +102,27 @@ def load_map():
     
     for i in range(x):
         for j in range(y):
-            if pixels[i, j] == (255, 51, 153, 255):
+            if pixels[i, j] == (0, 0, 0):
                 Texture_Block((i*24, j*24))
                 
-    im = Image.open("data/stairs.png")
+    im = Image.open("data/left_stairs.png")
     pixels = im.load()
     x, y = im.size
     
     for i in range(x):
         for j in range(y):
-            if pixels[i, j] != (0, 0, 0, 0):
-                Texture_Stair((i*24, j*24))
+            if pixels[i, j] == (255, 0, 0):
+                Texture_Left_Stair((i*24, j*24))
+    
+    im = Image.open("data/right_stairs.png")
+    pixels = im.load()
+    x, y = im.size
+    
+    for i in range(x):
+        for j in range(y):
+            if pixels[i, j] == (255, 0, 0):
+                Texture_Right_Stair((i*24, j*24))    
+    
                 
     im = Image.open("data/coins.png")
     pixels = im.load()
@@ -112,17 +130,16 @@ def load_map():
     
     for i in range(x):
         for j in range(y):
-            if pixels[i, j] == (255, 255, 51, 255):
+            if pixels[i, j] == (255, 255, 0):
                 Texture_Coin((i*24, j*24))
             
-    im = Image.open("data/greys_1.png")
+    im = Image.open("data/greys.png")
     pixels = im.load()
     x, y = im.size
     for i in range(x):
         for j in range(y):
-            if pixels[i, j] == (0, 255, 0, 255):
+            if pixels[i, j] == (0, 0, 128):
                 Texture_Grey((i*24, j*24))
                 
                 
-    texture_map = Texture_Map((0, 0))
-    
+    texture_map = Texture_Map((-864, -864))
