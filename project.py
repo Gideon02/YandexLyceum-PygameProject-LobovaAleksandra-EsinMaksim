@@ -2,17 +2,14 @@ import os
 import pygame
 import math
 
-from textures import load_map, load_level, textures_spr, blocks, stairs, coins, COUNT_COIN, greys
-from activities import Player, Snowball, players, snowballs1, snowballs2
+from textures import load_map, load_level, textures_spr, blocks, stairs, coins, COUNT_COIN, greys, End
+from activities import Player, Snowball, players, snowballs1, snowballs2, moobs, Moob
 
 pygame.init()
 
-size = width, height = 1000, 600
+size = width, height = 1300, 700
 screen = pygame.display.set_mode(size)
-
-JUMP_POWER = 50
-MOVE_SPEED = 50
-GRAVITY = 5
+pygame.display.set_caption('SnowGame')
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -37,6 +34,24 @@ team_1, team_2 = pygame.sprite.Group(), pygame.sprite.Group()
 player1 = Player((31*24, 62*24))
 player1.add(team_1)
 
+sn1 = Moob((2496, 1962), -1, 'snowman1_pic.png')
+sn1.add(team_2)
+
+sn2 = Moob((2088, 1892), -1, 'snowman2_pic.png')
+sn2.add(team_2)
+
+sc1 = Moob((2640, 1438), -1, 'scare_1_pic.png')
+sc1.add(team_2)
+
+sc2 = Moob((1320, 2928), -1, 'scare_2_pic.png')
+sc2.add(team_2)
+
+sc3 = Moob((2928, 2426), -1, 'scare_3_pic.png')
+sc3.add(team_2)
+
+sc4 = Moob((192, 2594), 1, 'scare_4_pic.png')
+sc4.add(team_2)
+
 running_screen = True
 left1 = False
 right1 = False
@@ -46,7 +61,7 @@ left2 = False
 right2 = False
 up2 = False
 
-all_sprites = [textures_spr, blocks, stairs, players]
+all_sprites = [textures_spr, blocks, stairs, players, snowballs1, snowballs2, moobs]
 
 running_screen = True
 
@@ -61,12 +76,12 @@ class Camera:
         obj.rect.y += self.dy
 
     def update(self, target):
-        self.dx = -(target.rect.x + target.rect.w // 2 - 1000 // 2)
-        self.dy = -(target.rect.y + target.rect.h // 2 - 600 // 2)
+        self.dx = -(target.rect.x + target.rect.w // 2 - 1200 // 2)
+        self.dy = -(target.rect.y + target.rect.h // 2 - 760 // 2)
 
 
 camera = Camera((0, 0))
-pygame.time.set_timer(pygame.USEREVENT, 150)
+pygame.time.set_timer(pygame.USEREVENT, 80)
 PAUSE = False
 pygame.mouse.set_visible( False )
 
@@ -78,10 +93,17 @@ while running_screen:
             if event.key == pygame.K_f:
                 running_screen = False
     screen.fill((0, 0, 150))
+    myfont = pygame.font.SysFont('Comic Sans MS', 30)
+    textsurface1 = myfont.render('SnowGame', False, (0, 0, 0))
+    textsurface2 = myfont.render('PRESS F TO START', False, (0, 0, 0))
+    screen.blit(textsurface1,(525, 300))
+    screen.blit(textsurface2, (450, 350))    
     pygame.display.flip()
-    clock.tick(30)    
+    clock.tick(60)    
 
 running_screen = True
+
+count = 0
 
 while running_screen:
     for event in pygame.event.get():
@@ -140,25 +162,59 @@ while running_screen:
             if event.key == pygame.K_q:
                 Snowball((player1.rect.x, player1.rect.y), -1, 1) 
                 
-        if event.type == pygame.USEREVENT:            
+        if event.type == pygame.USEREVENT:
+            if count == 15:
+                for moob in team_2:
+                    moob.update()
+                    count = 0
+            else:
+                count += 1
             for grey in greys:
                 grey.update()
             for coin in coins:
                 coin.update()
+            for snowball in snowballs1:
+                snowball.hurt(team_2)
+                snowball.update(blocks)
+                
+            for snowball in snowballs2:
+                snowball.hurt(team_1)
+                snowball.update(blocks)
 
 
     screen.fill((0, 0, 0))
+    
+    if len(coins) == 0:
+        f = True
+        while f:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    running_screen = False
+                    f = False
+                    
+            g = pygame.sprite.Group()
+            end_game = End((0, 0))
+            end_game.add(g)
+            g.draw(screen)
+            
+            pygame.display.flip()
+            clock.tick(60)  
+            
     if PAUSE:
         screen.fill((255, 255, 0))
+        myfont = pygame.font.SysFont('Comic Sans MS', 30)
+        textsurface1 = myfont.render('PAUSE', False, (0, 0, 0))
+        textsurface2 = myfont.render('PRESS P TO CONTINUE', False, (0, 0, 0))
+        screen.blit(textsurface1,(525, 300))
+        screen.blit(textsurface2, (450, 350))
+        
     else:
         camera.update(player1)
         player1.update(left1, right1, up1, blocks, stairs)
         
         player1.count += len(pygame.sprite.spritecollide(player1, coins, True))
         
-        for snowball in snowballs1:
-            snowball.hurt(team_2)
-            snowball.update(blocks)    
+        
             
         for group in all_sprites:
             for sprite in group:
@@ -170,10 +226,11 @@ while running_screen:
         players.draw(screen)
         greys.draw(screen)
         snowballs1.draw(screen)
+        snowballs2.draw(screen)
+        moobs.draw(screen)
         coins.draw(screen)
     
-    
     pygame.display.flip()
-    clock.tick(30)
+    clock.tick(60)
     
 pygame.quit()
